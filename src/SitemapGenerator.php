@@ -89,6 +89,12 @@ class SitemapGenerator
      */
     private $baseURL;
     /**
+     * URL to the sitemap files, in case different from baseURL
+     * @var string
+     * @access private
+     */
+    private $sitemapBaseURL;
+    /**
      * Base path. Relative to script location.
      * Use this if Your sitemap and robots files should be stored in other
      * directory then script.
@@ -208,6 +214,8 @@ class SitemapGenerator
     public function __construct(string $baseURL, string $basePath = "", FileSystem $fs = null, Runtime $runtime = null)
     {
         $this->baseURL = rtrim($baseURL, '/');
+        // by default the sitemap file base URL will be the same as the regular baseURL, unless overridden with setSitemapBaseURL()
+        $this->sitemapBaseURL = rtrim($baseURL, '/');
 
         if ($fs === null) {
             $this->fs = new FileSystem();
@@ -224,7 +232,7 @@ class SitemapGenerator
         if ($this->runtime->is_writable($basePath) === false) {
             throw new InvalidArgumentException(
                 sprintf('the provided basePath (%s) should be a writable directory,', $basePath) .
-                ' please check its existence and permissions'
+                    ' please check its existence and permissions'
             );
         }
         if (strlen($basePath) > 0 && substr($basePath, -1) != DIRECTORY_SEPARATOR) {
@@ -258,6 +266,11 @@ class SitemapGenerator
         }
         $this->sitemapFileName = $filename;
         return $this;
+    }
+
+    public function setSitemapBaseURL(string $newBaseURL)
+    {
+        $this->sitemapBaseURL = rtrim($newBaseURL, '/');
     }
 
     /**
@@ -324,8 +337,8 @@ class SitemapGenerator
         string   $changeFrequency = null,
         float    $priority = null,
         array    $alternates = null,
-        array    $extensions = [])
-    {
+        array    $extensions = []
+    ) {
         if (!(1 <= mb_strlen($path) && mb_strlen($path) <= self::MAX_URL_LEN)) {
             throw new InvalidArgumentException(
                 sprintf("The urlPath argument length must be between 1 and %d.", self::MAX_URL_LEN)
@@ -370,8 +383,7 @@ class SitemapGenerator
         float    $priority = null,
         array    $alternates = null,
         array    $extensions = []
-    ): SitemapGenerator
-    {
+    ): SitemapGenerator {
         $this->validate($path, $lastModified, $changeFrequency, $priority, $alternates, $extensions);
 
         if ($this->totalUrlCount >= self::TOTAL_MAX_URLS) {
@@ -520,7 +532,7 @@ class SitemapGenerator
                 $this->fs->rename($this->flushedSitemaps[0], $targetSitemapFilepath);
             }
             $this->generatedFiles['sitemaps_location'] = [$targetSitemapFilepath];
-            $this->generatedFiles['sitemaps_index_url'] = $this->baseURL . '/' . $targetSitemapFilename;
+            $this->generatedFiles['sitemaps_index_url'] = $this->sitemapBaseURL . '/' . $targetSitemapFilename;
         } else if (count($this->flushedSitemaps) > 1) {
             $ext = '.' . pathinfo($this->sitemapFileName, PATHINFO_EXTENSION);
             $targetExt = $ext;
@@ -540,7 +552,7 @@ class SitemapGenerator
                 } else {
                     $this->fs->rename($flushedSitemap, $targetSitemapFilepath);
                 }
-                $sitemapsUrls[] = htmlspecialchars($this->baseURL . '/' . $targetSitemapFilename, ENT_QUOTES);
+                $sitemapsUrls[] = htmlspecialchars($this->sitemapBaseURL . '/' . $targetSitemapFilename, ENT_QUOTES);
                 $targetSitemapFilepaths[] = $targetSitemapFilepath;
             }
 
@@ -548,7 +560,7 @@ class SitemapGenerator
             $this->createSitemapIndex($sitemapsUrls, $targetSitemapIndexFilepath);
             $this->generatedFiles['sitemaps_location'] = $targetSitemapFilepaths;
             $this->generatedFiles['sitemaps_index_location'] = $targetSitemapIndexFilepath;
-            $this->generatedFiles['sitemaps_index_url'] = $this->baseURL . '/' . $this->sitemapIndexFileName;
+            $this->generatedFiles['sitemaps_index_url'] = $this->sitemapBaseURL . '/' . $this->sitemapIndexFileName;
         } else {
             throw new RuntimeException('failed to finalize, please add urls and flush first');
         }
@@ -629,7 +641,7 @@ class SitemapGenerator
             if ($this->runtime->curl_setopt($curlResource, CURLOPT_RETURNTRANSFER, true) == false) {
                 throw new RuntimeException(
                     "failed to set curl option CURLOPT_RETURNTRANSFER to true, error: "
-                    . $this->runtime->curl_error($curlResource)
+                        . $this->runtime->curl_error($curlResource)
                 );
             }
             $responseContent = $this->runtime->curl_exec($curlResource);
