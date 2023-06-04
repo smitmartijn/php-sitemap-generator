@@ -280,7 +280,7 @@ class SitemapGenerator
 
     public function addRemoteSitemap(string $sitemapURL)
     {
-        $this->remoteSitemaps += $sitemapURL;
+        $this->remoteSitemaps[] = $sitemapURL;
     }
 
     /**
