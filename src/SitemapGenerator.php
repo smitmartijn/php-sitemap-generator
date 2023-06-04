@@ -189,6 +189,11 @@ class SitemapGenerator
     private $flushedSitemaps = [];
 
     /**
+     * @var array Additional sitemap URLs that are included in the index file
+     */
+    private $remoteSitemaps = [];
+
+    /**
      * @var bool
      */
     private $isSitemapStarted = false;
@@ -271,6 +276,11 @@ class SitemapGenerator
     public function setSitemapBaseURL(string $newBaseURL)
     {
         $this->sitemapBaseURL = rtrim($newBaseURL, '/');
+    }
+
+    public function addRemoteSitemap(string $sitemapURL)
+    {
+        $this->remoteSitemaps += $sitemapURL;
     }
 
     /**
@@ -571,6 +581,9 @@ class SitemapGenerator
         $this->xmlWriter->flush(true);
         $this->writeSitemapIndexStart();
         foreach ($sitemapsUrls as $sitemapsUrl) {
+            $this->writeSitemapIndexUrl($sitemapsUrl);
+        }
+        foreach ($this->remoteSitemaps as $sitemapsUrl) {
             $this->writeSitemapIndexUrl($sitemapsUrl);
         }
         $this->writeSitemapIndexEnd();
